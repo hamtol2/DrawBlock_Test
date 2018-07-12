@@ -1,10 +1,11 @@
-function Block(id, currentX, currentY, width, height, isFlowL,rect, icon, flowL, flowR) {
+function Block(id, currentX, currentY, width, height, isFlowL, isFlowR, rect, icon, flowL, flowR) {
     this.id = id;
     this.currentX = currentX;
     this.currentY = currentY;
     this.width = width;
     this.height = height;
-    this.isFlowL = isFlowL;
+    this.isFlowL = isFlowL === undefined ? false : isFlowL;
+    this.isFlowR = isFlowR === undefined ? true : isFlowR;
     this.rect = rect;
     this.icon = icon;
     this.flowL = flowL;
@@ -19,34 +20,48 @@ function drawBlock(block, id) {
 
     if (block.icon === undefined) {
         block.icon = document.getElementById(id || block.id);
+        
+        if (window.navigator.userAgent.indexOf("Edge") > -1) {
+            context.drawImage(block.icon, block.currentX - (block.icon.width / 2), block.currentY - (block.icon.height / 2));    
+        }
+
         block.icon.addEventListener('load', function() {
             context.drawImage(block.icon, block.currentX - (block.icon.width / 2), block.currentY - (block.icon.height / 2));
         }, false);
     } else {
-        block.icon = document.getElementById(id || block.id);
         context.drawImage(block.icon, block.currentX - (block.icon.width / 2), block.currentY - (block.icon.height / 2));
     }
 
     // Draw flow Right.
-    if (block.flowR === undefined) {
-        block.flowR = document.getElementById('flowR');
-        block.flowR.addEventListener('load', function() {
+    if (block.isFlowR === true) {
+        if (block.flowR === undefined) {
+            block.flowR = document.getElementById('flowR');
+
+            if (window.navigator.userAgent.indexOf("Edge") > -1) {
+                context.drawImage(block.flowR, block.currentX + (block.width / 2), block.currentY - 5);
+            }
+    
+            block.flowR.addEventListener('load', function() {
+                context.drawImage(block.flowR, block.currentX + (block.width / 2), block.currentY - 5);
+            }, false);
+        } else {
             context.drawImage(block.flowR, block.currentX + (block.width / 2), block.currentY - 5);
-        }, false);
-    } else {
-        block.flowR = document.getElementById('flowR');
-        context.drawImage(block.flowR, block.currentX + (block.width / 2), block.currentY - 5);
+        }
     }
 
     // testing..
     if (block.isFlowL === true) {
         if (block.flowL === undefined) {
             block.flowL = document.getElementById('flowR');
+
+            if (window.navigator.userAgent.indexOf("Edge") > -1) {
+                context.drawImage(block.flowL, block.currentX - (block.width / 2) - block.flowL.width, block.currentY - 5);
+            }
+
             block.flowL.addEventListener('load', function() {
                 context.drawImage(block.flowL, block.currentX - (block.width / 2) - block.flowL.width, block.currentY - 5);
             }, false);
         } else {
-            block.flowL = document.getElementById('flowR');
             context.drawImage(block.flowL, block.currentX - (block.width / 2) - block.flowL.width, block.currentY - 5);
         }
     }
@@ -84,7 +99,7 @@ function checkIfDraggable(blocks, mouseX, mouseY) {
 
 function repaint(blocks) {
     for (var ix in blocks) {
-        drawBlock(blocks[ix], undefined);
+        drawBlock(blocks[ix]);
     }
 }
 
