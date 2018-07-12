@@ -1,15 +1,12 @@
-function Block(id, currentX, currentY, width, height, isFlowL, isFlowR, rect, icon, flowL, flowR) {
+function Block(id, currentX, currentY, width, height, flows, rect, icon) {
     this.id = id;
     this.currentX = currentX;
     this.currentY = currentY;
     this.width = width;
     this.height = height;
-    this.isFlowL = isFlowL === undefined ? false : isFlowL;
-    this.isFlowR = isFlowR === undefined ? true : isFlowR;
+    this.flows = flows;
     this.rect = rect;
     this.icon = icon;
-    this.flowL = flowL;
-    this.flowR = flowR;
 }
 
 function addBlock(block) {
@@ -20,53 +17,56 @@ function drawBlock(block, id) {
 
     if (block.icon === undefined) {
         block.icon = document.getElementById(id || block.id);
-        
-        if (window.navigator.userAgent.indexOf("Edge") > -1) {
-            context.drawImage(block.icon, block.currentX - (block.icon.width / 2), block.currentY - (block.icon.height / 2));    
-        }
 
-        block.icon.addEventListener('load', function() {
+        if (window.navigator.userAgent.indexOf("Edge") > -1) {
             context.drawImage(block.icon, block.currentX - (block.icon.width / 2), block.currentY - (block.icon.height / 2));
-        }, false);
+        } else {
+            block.icon.addEventListener('load', function() {
+                context.drawImage(block.icon, block.currentX - (block.icon.width / 2), block.currentY - (block.icon.height / 2));
+            }, false);
+        }
     } else {
         context.drawImage(block.icon, block.currentX - (block.icon.width / 2), block.currentY - (block.icon.height / 2));
     }
 
-    // Draw flow Right.
-    if (block.isFlowR === true) {
-        if (block.flowR === undefined) {
-            block.flowR = document.getElementById('flowR');
+    for (var key in block.flows) {
+        if (block.flows[key].id === 'flowL') {
+            if (block.flows[key].element === undefined) {
+                block.flows[key].element = document.getElementById('flowR');
 
-            if (window.navigator.userAgent.indexOf("Edge") > -1) {
-                context.drawImage(block.flowR, block.currentX + (block.width / 2), block.currentY - 5);
+                if (window.navigator.userAgent.indexOf('Edge') > -1) {
+                    context.drawImage(block.flows[key].element, block.currentX - (block.width / 2) - block.flows[key].element.width, block.currentY - block.flows[key].element.height / 2);        
+                } else {
+                    block.flows[key].element.addEventListener('load', function() {
+                        context.drawImage(block.flows[key].element, block.currentX - (block.width / 2) - block.flows[key].element.width, block.currentY - block.flows[key].element.height / 2);        
+                    }, false);
+                }
+            } else {
+                context.drawImage(block.flows[key].element, block.currentX - (block.width / 2) - block.flows[key].element.width, block.currentY - block.flows[key].element.height / 2);
             }
-    
-            block.flowR.addEventListener('load', function() {
-                context.drawImage(block.flowR, block.currentX + (block.width / 2), block.currentY - 5);
-            }, false);
+            
+        } else if (block.flows[key].id === 'flowR') {
+            if (block.flows[key].element === undefined) {
+                block.flows[key].element = document.getElementById('flowR');
+
+                if (window.navigator.userAgent.indexOf('Edge') > -1) {
+                    context.drawImage(block.flows[key].element, block.currentX + (block.width / 2), block.currentY - block.flows[key].element.height / 2);
+                } else {
+                    block.flows[key].element.addEventListener('load', function() {
+                        context.drawImage(block.flows[key].element, block.currentX + (block.width / 2), block.currentY - block.flows[key].element.height / 2);
+                    }, false);
+                }
+            } else {
+                context.drawImage(block.flows[key].element, block.currentX + (block.width / 2), block.currentY - block.flows[key].element.height / 2);
+            }
+            
+            
         } else {
-            context.drawImage(block.flowR, block.currentX + (block.width / 2), block.currentY - 5);
+            console.log('flow control draw error: ' + key);
         }
     }
 
-    // testing..
-    if (block.isFlowL === true) {
-        if (block.flowL === undefined) {
-            block.flowL = document.getElementById('flowR');
-
-            if (window.navigator.userAgent.indexOf("Edge") > -1) {
-                context.drawImage(block.flowL, block.currentX - (block.width / 2) - block.flowL.width, block.currentY - 5);
-            }
-
-            block.flowL.addEventListener('load', function() {
-                context.drawImage(block.flowL, block.currentX - (block.width / 2) - block.flowL.width, block.currentY - 5);
-            }, false);
-        } else {
-            context.drawImage(block.flowL, block.currentX - (block.width / 2) - block.flowL.width, block.currentY - 5);
-        }
-    }
-
-    // Draw Rectangle.
+    // Draw border.
     block.rect = new Path2D();
     block.rect.rect(block.currentX - (block.width / 2), block.currentY - (block.height / 2), block.width, block.height);
     context.stroke(block.rect);
