@@ -12,9 +12,9 @@
     repaint(logicBlocks);
 
     // mouse event binding.
-    canvas.onmousedown = onmousedown;
-    canvas.onmouseup = onmouseup;
-    canvas.onmouseout = onmouseup;
-    canvas.onmousemove = onmousemove;
+    canvas.onmousedown = onMouseDown;
+    canvas.onmouseup = onMouseUp;
+    canvas.onmouseout = onMouseUp;
+    canvas.onmousemove = onMouseMove;
     
 })();

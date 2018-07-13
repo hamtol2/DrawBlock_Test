@@ -13,8 +13,7 @@ function addBlock(block) {
     logicBlocks.push(block);
 }
 
-function drawBlock(block, id) {
-
+function drawIcon(block, id) {
     if (block.icon === undefined) {
         block.icon = document.getElementById(id || block.id);
 
@@ -28,42 +27,87 @@ function drawBlock(block, id) {
     } else {
         context.drawImage(block.icon, block.currentX - (block.icon.width / 2), block.currentY - (block.icon.height / 2));
     }
+}
 
-    for (var key in block.flows) {
-        if (block.flows[key].id === 'flowL') {
-            if (block.flows[key].element === undefined) {
-                block.flows[key].element = document.getElementById('flowR');
+function drawFlowL(block, key) {
+    var posX;
+    var posY;
 
-                if (window.navigator.userAgent.indexOf('Edge') > -1) {
-                    context.drawImage(block.flows[key].element, block.currentX - (block.width / 2) - block.flows[key].element.width, block.currentY - block.flows[key].element.height / 2);        
-                } else {
-                    block.flows[key].element.addEventListener('load', function() {
-                        context.drawImage(block.flows[key].element, block.currentX - (block.width / 2) - block.flows[key].element.width, block.currentY - block.flows[key].element.height / 2);        
-                    }, false);
-                }
-            } else {
-                context.drawImage(block.flows[key].element, block.currentX - (block.width / 2) - block.flows[key].element.width, block.currentY - block.flows[key].element.height / 2);
-            }
-            
-        } else if (block.flows[key].id === 'flowR') {
-            if (block.flows[key].element === undefined) {
-                block.flows[key].element = document.getElementById('flowR');
+    if (block.flows[key].element === undefined) {
+        block.flows[key].element = document.getElementById('flowR');
 
-                if (window.navigator.userAgent.indexOf('Edge') > -1) {
-                    context.drawImage(block.flows[key].element, block.currentX + (block.width / 2), block.currentY - block.flows[key].element.height / 2);
-                } else {
-                    block.flows[key].element.addEventListener('load', function() {
-                        context.drawImage(block.flows[key].element, block.currentX + (block.width / 2), block.currentY - block.flows[key].element.height / 2);
-                    }, false);
-                }
-            } else {
-                context.drawImage(block.flows[key].element, block.currentX + (block.width / 2), block.currentY - block.flows[key].element.height / 2);
-            }
-            
-            
+        posX = block.currentX - (block.width / 2) - block.flows[key].element.width;
+        posY = block.currentY - block.flows[key].element.height / 2;
+
+        if (window.navigator.userAgent.indexOf('Edge') > -1) {
+            context.drawImage(block.flows[key].element, posX, posY);
         } else {
-            console.log('flow control draw error: ' + key);
+            block.flows[key].element.addEventListener('load', function() {
+                posX = block.currentX - (block.width / 2) - block.flows[key].element.width;
+                posY = block.currentY - block.flows[key].element.height / 2;
+
+                context.drawImage(block.flows[key].element, posX, posY);
+            }, false);
         }
+    } else {
+
+        posX = block.currentX - (block.width / 2) - block.flows[key].element.width;
+        posY = block.currentY - block.flows[key].element.height / 2;
+
+        context.drawImage(block.flows[key].element, posX, posY);
+    }
+}
+
+function drawFlowR(block, key) {
+    
+    var posX;
+    var posY;
+
+    if (block.flows[key].element === undefined) {
+        block.flows[key].element = document.getElementById('flowR');
+
+        posX = block.currentX + (block.width / 2);
+        posY = block.currentY - (block.flows[key].element.height / 2);
+
+        if (window.navigator.userAgent.indexOf('Edge') > -1) {
+            context.drawImage(block.flows[key].element, posX, posY);
+        } else {
+            block.flows[key].element.addEventListener('load', function() {
+
+                posX = block.currentX + (block.width / 2);
+                posY = block.currentY - (block.flows[key].element.height / 2);
+
+                context.drawImage(block.flows[key].element, posX, posY);
+            }, false);
+        }
+    } else {
+
+        posX = block.currentX + (block.width / 2);
+        posY = block.currentY - (block.flows[key].element.height / 2);
+
+        context.drawImage(block.flows[key].element, posX, posY);
+    }
+}
+
+function drawFlow(block, key) {
+
+    if (block.flows[key].id === 'flowL') {
+        drawFlowL(block, key);
+    } else if (block.flows[key].id === 'flowR') {
+        drawFlowR(block, key);
+    } else {
+        console.log('flow control draw error: ' + key);
+    }
+}
+
+function drawBlock(block, id) {
+
+    // Draw main icon image.
+    drawIcon(block, id);
+
+    // Draw flow control image.
+    for (var key in block.flows) {
+        drawFlow(block, key);
     }
 
     // Draw border.

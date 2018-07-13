@@ -1,15 +1,15 @@
-function onmousedown(e) {
+function onMouseDown(e) {
     var mouseX = e.pageX - this.offsetLeft;
     var mouseY = e.pageY - this.offsetTop;
 
     checkIfDraggable(logicBlocks, mouseX, mouseY);
 }
 
-function onmouseup(e) {
+function onMouseUp(e) {
     setAllNotDraggble(logicBlocks);
 }
 
-function onmousemove(e) {
+function onMouseMove(e) {
 
     var checkValue = checkShouldRepaint(logicBlocks);
 
