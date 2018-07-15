@@ -1,4 +1,5 @@
-function Block(id, currentX, currentY, width, height, flows, rect, icon) {
+function Block(src, currentX, currentY, width, height, flows, rect, icon, id) {
+    this.src = src;
     this.id = id;
     this.currentX = currentX;
     this.currentY = currentY;
@@ -7,15 +8,20 @@ function Block(id, currentX, currentY, width, height, flows, rect, icon) {
     this.flows = flows;
     this.rect = rect;
     this.icon = icon;
+    this.state = {
+        isDraggable : false,
+        isDrawLine : false
+    };
 }
 
 function addBlock(block) {
+    block.id = logicBlocks.length;
     logicBlocks.push(block);
 }
 
-function drawIcon(block, id) {
+function drawIcon(block, src) {
     if (block.icon === undefined) {
-        block.icon = document.getElementById(id || block.id);
+        block.icon = document.getElementById(src || block.src);
 
         if (window.navigator.userAgent.indexOf("Edge") > -1) {
             context.drawImage(block.icon, block.currentX - (block.icon.width / 2), block.currentY - (block.icon.height / 2));
@@ -100,10 +106,10 @@ function drawFlow(block, key) {
     }
 }
 
-function drawBlock(block, id) {
+function drawBlock(block, src) {
 
     // Draw main icon image.
-    drawIcon(block, id);
+    drawIcon(block, src);
 
     // Draw flow control image.
     for (var key in block.flows) {
@@ -113,6 +119,7 @@ function drawBlock(block, id) {
     // Draw border.
     block.rect = new Path2D();
     block.rect.rect(block.currentX - (block.width / 2), block.currentY - (block.height / 2), block.width, block.height);
+    context.fillText('id: ' + block.id, block.currentX, block.currentY + (block.height / 3));
     context.stroke(block.rect);
 }
 
@@ -121,24 +128,86 @@ function resetCanvas() {
 }
 
 function setDraggable(block) {
-    block.isDraggable = true;
+    //block.isDraggable = true;
+    block.state.isDraggable = true;
+    block.state.isDrawLine = !block.state.isDraggable;
+}
+
+function setDrawLineState(block) {
+    block.state.isDrawLine = true;
+    block.state.isDrawLine = !block.state.isDraggable;
+
+    console.log('setDrawLineState: ' + block.id + ' : ' + block.flows[0].id);
 }
 
 function setAllNotDraggble(blocks) {
     for (var ix in blocks) {
-        blocks[ix].isDraggable = false;
+        blocks[ix].state.isDraggable = blocks[ix].state.isDrawLine = false;
     }
 }
 
 function checkIfDraggable(blocks, mouseX, mouseY) {
     for (var ix in blocks) {
-        if (mouseX >= (blocks[ix].currentX - blocks[ix].width / 2) && 
-            mouseX <= (blocks[ix].currentX + blocks[ix].width / 2) && 
-            mouseY >= (blocks[ix].currentY - blocks[ix].height / 2) && 
-            mouseY <= (blocks[ix].currentY + blocks[ix].height / 2)) {
-                setDraggable(blocks[ix]);
+        // if (mouseX >= (blocks[ix].currentX - blocks[ix].width / 2) && 
+        //     mouseX <= (blocks[ix].currentX + blocks[ix].width / 2) && 
+        //     mouseY >= (blocks[ix].currentY - blocks[ix].height / 2) && 
+        //     mouseY <= (blocks[ix].currentY + blocks[ix].height / 2)) {
+        //         setDraggable(blocks[ix]);
+        // }
+        if (pointInBlock(blocks[ix], mouseX, mouseY) === true) {
+            setDraggable(blocks[ix]);
+            break;
+        }
+        else if (pointInFlow(blocks[ix], mouseX, mouseY).state === true) {
+            setDrawLineState(blocks[ix]);
+            break;
         }
     }
+}
+
+function pointInBlock(block, mouseX, mouseY) {
+    if (mouseX >= (block.currentX - block.width / 2) && 
+        mouseX <= (block.currentX + block.width / 2) && 
+        mouseY >= (block.currentY - block.height / 2) && 
+        mouseY <= (block.currentY + block.height / 2)) {
+            return true;
+    } else {
+        return false;
+    }
+}
+
+function pointInFlow(block, mouseX, mouseY) {
+
+    for (var key in block.flows) {
+        //console.log('width: ' + block.flows[key].element.width + ' ,height: ' + block.flows[key].element.height);
+        if (mouseX >= (block.currentX + (block.width / 2 - block.flows[key].element.width / 2)) &&
+            mouseX >= (block.currentX + (block.width / 2 + block.flows[key].element.width / 2)) &&
+            mouseY >= (block.currentY - (block.flows[key].element.height / 2 - block.flows[key].element.height / 2)) &&
+            mouseY >= (block.currentY + (block.flows[key].element.height / 2 + block.flows[key].element.height / 2))) {
+                return { state : true, flow : block.flows[key] };
+        }
+
+        // if (block.flows[key].id === 'flowL' || block.flows[key].id === 'flowR') {
+        //     ret = { state : true, flow : block.flows[key] };
+        //     break;
+        // }
+    }
+
+    return { state : false, flow : undefined };
+
+    // if (ret.state === false)
+    //     return { state : false, flow : undefined };
+
+    // posX = block.currentX + (block.width / 2);
+    // posY = block.currentY - (block.flows[key].element.height / 2);
+    // if (mouseX >= (block.currentX + (block.width / 2) - (block.flows[key].element.width / 2)) &&
+    //     mouseX >= (block.currentX + (block.width / 2) + (block.flows[key].element.width / 2)) &&
+    //     mouseY >= (block.currentY - (block.flows[key].element.height / 2) - (block.flows[key].element.height / 2)) &&
+    //     mouseY >= (block.currentY - (block.flows[key].element.height / 2) + (block.flows[key].element.height / 2))) {
+    //         return { state : true, flow : block.flows[key] };
+    // } else {
+    //     return { state : false, flow : undefined };
+    // }
 }
 
 function repaint(blocks) {
@@ -150,7 +219,7 @@ function repaint(blocks) {
 function checkShouldRepaint(blocks) {
 
     for (var ix in blocks) {
-        if (blocks[ix].isDraggable === true) 
+        if (blocks[ix].state.isDraggable === true) 
             return { shouldPaint : true, block : blocks[ix] };
         // if (blocks[ix].idDrawLine === true)
         //     return { shouldDrawLine : true, block : blocks[ix] };
