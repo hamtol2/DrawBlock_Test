@@ -10,7 +10,8 @@ function Block(src, currentX, currentY, width, height, flows, rect, icon, id) {
     this.icon = icon;
     this.state = {
         isDraggable : false,
-        isDrawLine : false
+        isDrawLine : false,
+        drawInfo : undefined
     };
 }
 
@@ -133,11 +134,10 @@ function setDraggable(block) {
     block.state.isDrawLine = !block.state.isDraggable;
 }
 
-function setDrawLineState(block) {
+function setDrawLineState(block, drawInfo) {
     block.state.isDrawLine = true;
-    block.state.isDrawLine = !block.state.isDraggable;
-
-    console.log('setDrawLineState: ' + block.id + ' : ' + block.flows[0].id);
+    block.state.drawInfo = drawInfo;
+    block.state.isDraggable = !block.state.isDrawLine;
 }
 
 function setAllNotDraggble(blocks) {
@@ -148,19 +148,14 @@ function setAllNotDraggble(blocks) {
 
 function checkIfDraggable(blocks, mouseX, mouseY) {
     for (var ix in blocks) {
-        // if (mouseX >= (blocks[ix].currentX - blocks[ix].width / 2) && 
-        //     mouseX <= (blocks[ix].currentX + blocks[ix].width / 2) && 
-        //     mouseY >= (blocks[ix].currentY - blocks[ix].height / 2) && 
-        //     mouseY <= (blocks[ix].currentY + blocks[ix].height / 2)) {
-        //         setDraggable(blocks[ix]);
-        // }
-        if (pointInBlock(blocks[ix], mouseX, mouseY) === true) {
+        
+        var poinstInBlockResult = pointInBlock(blocks[ix], mouseX, mouseY);
+        var pointInFlowResult = pointInFlow(blocks[ix], mouseX, mouseY);
+
+        if (poinstInBlockResult === true) {
             setDraggable(blocks[ix]);
-            break;
-        }
-        else if (pointInFlow(blocks[ix], mouseX, mouseY).state === true) {
-            setDrawLineState(blocks[ix]);
-            break;
+        } else if (pointInFlowResult.state === true) {
+            setDrawLineState(blocks[ix], pointInFlowResult);
         }
     }
 }
@@ -170,7 +165,7 @@ function pointInBlock(block, mouseX, mouseY) {
         mouseX <= (block.currentX + block.width / 2) && 
         mouseY >= (block.currentY - block.height / 2) && 
         mouseY <= (block.currentY + block.height / 2)) {
-            return true;
+        return true;
     } else {
         return false;
     }
@@ -179,35 +174,39 @@ function pointInBlock(block, mouseX, mouseY) {
 function pointInFlow(block, mouseX, mouseY) {
 
     for (var key in block.flows) {
-        //console.log('width: ' + block.flows[key].element.width + ' ,height: ' + block.flows[key].element.height);
-        if (mouseX >= (block.currentX + (block.width / 2 - block.flows[key].element.width / 2)) &&
-            mouseX >= (block.currentX + (block.width / 2 + block.flows[key].element.width / 2)) &&
-            mouseY >= (block.currentY - (block.flows[key].element.height / 2 - block.flows[key].element.height / 2)) &&
-            mouseY >= (block.currentY + (block.flows[key].element.height / 2 + block.flows[key].element.height / 2))) {
-                return { state : true, flow : block.flows[key] };
-        }
+        if (block.flows[key].id === 'flowR' && 
+            mouseX >= (block.currentX + (block.width / 2)) &&
+            mouseX <= (block.currentX + (block.width / 2 + block.flows[key].element.width)) &&
+            mouseY >= (block.currentY - (block.flows[key].element.height / 2)) &&
+            mouseY <= (block.currentY + (block.flows[key].element.height / 2))) {
 
-        // if (block.flows[key].id === 'flowL' || block.flows[key].id === 'flowR') {
-        //     ret = { state : true, flow : block.flows[key] };
-        //     break;
-        // }
+                return { 
+                    state : true, 
+                    flow : block.flows[key], 
+                    startPos : {
+                        x : (block.currentX + (block.width / 2 + block.flows[key].element.width / 2)),
+                        y : block.currentY
+                    }
+                };
+
+        } else if (block.flows !== undefined && block.flows[key] !== undefined && block.flows[key].id === 'flowL' && 
+            mouseX >= (block.currentX - (block.width / 2 + block.flows[key].element.width)) &&
+            mouseX <= (block.currentX - block.width /2) &&
+            mouseY >= (block.currentY - (block.flows[key].element.height / 2)) &&
+            mouseY <= (block.currentY + (block.flows[key].element.height / 2))) {
+
+                return { 
+                    state : true, 
+                    flow : block.flows[key],
+                    startPos : {
+                        x : (block.currentX - (block.width / 2 + block.flows[key].element.width/2)),
+                        y : block.currentY
+                    } 
+                };
+        }
     }
 
     return { state : false, flow : undefined };
-
-    // if (ret.state === false)
-    //     return { state : false, flow : undefined };
-
-    // posX = block.currentX + (block.width / 2);
-    // posY = block.currentY - (block.flows[key].element.height / 2);
-    // if (mouseX >= (block.currentX + (block.width / 2) - (block.flows[key].element.width / 2)) &&
-    //     mouseX >= (block.currentX + (block.width / 2) + (block.flows[key].element.width / 2)) &&
-    //     mouseY >= (block.currentY - (block.flows[key].element.height / 2) - (block.flows[key].element.height / 2)) &&
-    //     mouseY >= (block.currentY - (block.flows[key].element.height / 2) + (block.flows[key].element.height / 2))) {
-    //         return { state : true, flow : block.flows[key] };
-    // } else {
-    //     return { state : false, flow : undefined };
-    // }
 }
 
 function repaint(blocks) {
@@ -216,13 +215,23 @@ function repaint(blocks) {
     }
 }
 
+function drawLine(startPos, endPos) {
+    // context.bezierCurveTo(100, 100, 0, 150, 50, 200);
+
+    context.beginPath();
+    context.moveTo(startPos.x, startPos.y);
+    context.lineTo(endPos.x, endPos.y);
+    context.stroke();
+}
+
 function checkShouldRepaint(blocks) {
 
     for (var ix in blocks) {
         if (blocks[ix].state.isDraggable === true) 
             return { shouldPaint : true, block : blocks[ix] };
-        // if (blocks[ix].idDrawLine === true)
-        //     return { shouldDrawLine : true, block : blocks[ix] };
+        else if (blocks[ix].state.isDrawLine === true) {
+            return { shouldDrawLine : true, block : blocks[ix] };
+        }
     }
 
     return { shouldPaint : false, block : undefined };
